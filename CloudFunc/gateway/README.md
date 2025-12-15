@@ -7,8 +7,22 @@ The gateway acts as an entry point for client requests. It receives JSON data fr
 
 A JWT verification function is included as a placeholder and does not perform real authentication yet.
 
----
 
-## How to Run
-```bash
-node gateway.js
+
+Sample request :
+
+{
+  
+  "token": "sample-token",
+  
+  "data": "test message"
+  
+}
+
+Output :
+{
+
+  "message": "gateway request received"
+
+}
+
