@@ -1,4 +1,6 @@
 const express = require("express");
+const axios = require("axios");
+
 const app = express();
 const PORT = 3000;
 
@@ -9,11 +11,38 @@ function verifyJWT(req, res, next) {
   next();
 }
 
-app.post("/invoke", verifyJWT, (req, res) => {
-  console.log("Incoming request data:", req.body);
-  res.status(200).json({
-    message: "gateway request received"
-  });
+app.post("/invoke", verifyJWT, async (req, res) => {
+  const { functionName, payload } = req.body;
+
+  if (!functionName || !payload) {
+    return res.status(400).json({
+      error: "functionName and payload are required"
+    });
+  }
+
+  try {
+    const registryResponse = await axios.get(
+      `http://localhost:3001/function/${functionName}`
+    );
+
+    const { image, owner } = registryResponse.data;
+
+    res.status(200).json({
+      message: "Function found. Gateway integration successful.",
+      functionName,
+      owner,
+      image,
+      payload
+    });
+
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      return res.status(404).json({ error: "Function not registered" });
+    }
+
+    console.error(error.message);
+    res.status(500).json({ error: "Gateway error" });
+  }
 });
 
 app.get("/", (req, res) => {
@@ -23,4 +52,3 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Gateway Service running on port ${PORT}`);
 });
-
