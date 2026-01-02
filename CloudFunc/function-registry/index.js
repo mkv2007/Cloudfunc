@@ -1,19 +1,15 @@
 const express = require('express');
 const { Pool } = require('pg');
 
-
 const app = express();
 app.use(express.json());
-app.use(express.urlencoded({extended:false}));
 
-
-
-const pool = new Pool ({
-    host: 'localhost',
-    user: 'postgres',
-    password: 'postgres',
-    database: 'functions_db',
-    port: 5433
+const pool = new Pool({
+  host: 'localhost',
+  user: 'postgres',
+  password: 'postgres',
+  database: 'functions_db',
+  port: 5433
 });
 
 app.get('/functions', async (req, res) => {
@@ -29,12 +25,15 @@ app.get('/functions', async (req, res) => {
 app.post('/registerFunction', async (req, res) => {
   const { name, owner, image } = req.body;
 
+  if (!name || !owner || !image) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+
   try {
     const result = await pool.query(
       'INSERT INTO functions (name, owner, image) VALUES ($1, $2, $3) RETURNING *',
       [name, owner, image]
     );
-
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -43,6 +42,26 @@ app.post('/registerFunction', async (req, res) => {
 });
 
 
-app.listen(3000,()=>{
-    console.log("Server Running on Port 3000");
+app.get('/function/:name', async (req, res) => {
+  const { name } = req.params;
+
+  try {
+    const result = await pool.query(
+      'SELECT * FROM functions WHERE name = $1',
+      [name]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Function not found' });
+    }
+
+    res.json(result.rows[0]); // clean metadata
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.listen(3001, () => {
+  console.log('Function Registry running on port 3001');
 });
