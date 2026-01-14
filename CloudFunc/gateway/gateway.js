@@ -21,18 +21,24 @@ app.post("/invoke", verifyJWT, async (req, res) => {
   }
 
   try {
+ 
     const registryResponse = await axios.get(
       `http://localhost:3001/function/${functionName}`
     );
 
-    const { image, owner } = registryResponse.data;
+    const { image } = registryResponse.data;
 
+    const containerResponse = await axios.post(
+      "http://localhost:4000/execute",   
+      {
+        imageName: image,
+        payload: payload
+      }
+    );
+    
     res.status(200).json({
-      message: "Function found. Gateway integration successful.",
       functionName,
-      owner,
-      image,
-      payload
+      result: containerResponse.data
     });
 
   } catch (error) {
