@@ -7,21 +7,16 @@ app.use(express.json());
 const pool = new Pool({
   host: 'localhost',
   user: 'postgres',
-  password: 'postgres',
+  password: 'postgres',   // ⚠️ change if your password is different
   database: 'functions_db',
-  port: 5433
+  port: 5432
 });
 
-app.get('/functions', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM functions');
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
+app.get('/', (req, res) => {
+  res.send('Function Registry is running');
 });
 
+// Register a function
 app.post('/registerFunction', async (req, res) => {
   const { name, owner, image } = req.body;
 
@@ -34,20 +29,20 @@ app.post('/registerFunction', async (req, res) => {
       'INSERT INTO functions (name, owner, image) VALUES ($1, $2, $3) RETURNING *',
       [name, owner, image]
     );
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error(err.message);
     res.status(500).json({ error: 'Database error' });
   }
 });
-
 
 app.get('/function/:name', async (req, res) => {
   const { name } = req.params;
 
   try {
     const result = await pool.query(
-      'SELECT * FROM functions WHERE name = $1',
+      'SELECT name, owner, image FROM functions WHERE name = $1',
       [name]
     );
 
@@ -55,9 +50,18 @@ app.get('/function/:name', async (req, res) => {
       return res.status(404).json({ error: 'Function not found' });
     }
 
-    res.json(result.rows[0]); // clean metadata
+    res.json(result.rows[0]); 
   } catch (err) {
-    console.error(err);
+    console.error(err.message);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.get('/functions', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM functions');
+    res.json(result.rows);
+  } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }
 });
